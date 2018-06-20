@@ -1,5 +1,15 @@
 #!/bin/bash
-#
+
+# sed needs different args to -i depending on the os
+case "`uname`" in
+  Darwin*)
+    SEDI="$(which sed) -i ''"
+    ;;
+  *)
+    SEDI="$(which sed) -i"
+    ;;
+esac
+
 echo "------------------------------"
 echo " Merging Kubernetes"
 echo "------------------------------"
@@ -37,7 +47,7 @@ for p in `find docs/package -type f`; do
   # markdown files only
   if [ ${p: -3} == ".md" ]; then
     # remove any dodgy control characters - sometimes copied in from commands
-    sed -i -e 's/ *//g' $p
+    $SEDI -e 's/ *//g' $p
 
     # insert tag ( markdown files only )
     awk -v n=2 '/---/ { if (++count == n) sub(/---/, "---\n\n<!-- This source repo for this topic is https://github.com/mesosphere/dcos-kubernetes -->\n"); } 1{print}' $p > tmp && mv tmp $p
@@ -65,7 +75,7 @@ for p in `find docs/package -type f`; do
 done
 
 # Fix up relative links after prettifying structure above
-sed -i -e 's/](\(.*\)\.md)/](..\/\1)/' $(find docs/package/ -name '*.md')
+$SEDI -e 's/](\(.*\)\.md)/](..\/\1)/' $(find docs/package/ -name '*.md')
 
 cp -r docs/package/* ./pages/services/kubernetes/$directory
 
@@ -74,14 +84,14 @@ rm -rf docs/
 
 # Add version information to latest index file
 
-sed -i -e "s/^navigationTitle: .*$/navigationTitle: Kubernetes $directory/g" ./pages/services/kubernetes/$directory/index.md
-sed -i -e "s/^title: .*$/title: Kubernetes $directory/g" ./pages/services/kubernetes/$directory/index.md
+$SEDI -e "s/^navigationTitle: .*$/navigationTitle: Kubernetes $directory/g" ./pages/services/kubernetes/$directory/index.md
+$SEDI -e "s/^title: .*$/title: Kubernetes $directory/g" ./pages/services/kubernetes/$directory/index.md
 
 # Update sort order of index files
 
 weight=10
 for i in $( ls -r ./pages/services/kubernetes/*/index.md ); do
-  sed -i "s/^menuWeight:.*$/menuWeight: ${weight}/" $i
+  $SEDI "s/^menuWeight:.*$/menuWeight: ${weight}/" $i
   weight=$(expr ${weight} + 10)
 done
 
